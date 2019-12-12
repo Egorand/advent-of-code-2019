@@ -7,10 +7,11 @@ let package = Package(
     name: "Day2",
     dependencies: [
         .package(path: "../Utils"),
+        .package(path: "../Intcode"),
     ],
     targets: [
         .target(
             name: "Day2",
-            dependencies: ["Utils"]),
+            dependencies: ["Utils", "Intcode"]),
     ]
 )
