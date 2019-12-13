@@ -2,14 +2,24 @@ import XCTest
 @testable import Intcode
 
 final class IntcodeTests: XCTestCase {
-    func testExample() {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct
-        // results.
-        XCTAssertEqual(Intcode().text, "Hello, World!")
-    }
+  func testAddition() {
+    let program = Program(memory: [1,0,0,0,99,2,3])
+    XCTAssertEqual(program.execute(noun: 5, verb: 6), 5)
+  }
+  
+  func testMultiplication() {
+    let program = Program(memory: [2,0,0,0,99,2,3])
+    XCTAssertEqual(program.execute(noun: 5, verb: 6), 6)
+  }
+  
+  func testHalt() {
+    let program = Program(memory: [99,2,0,0,0,99,2,3])
+    XCTAssertEqual(program.execute(noun: 6, verb: 7), 99)
+  }
 
-    static var allTests = [
-        ("testExample", testExample),
-    ]
+  static var allTests = [
+      ("addition", testAddition),
+      ("multiplication", testMultiplication),
+      ("halt", testHalt),
+  ]
 }
