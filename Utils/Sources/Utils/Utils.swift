@@ -40,3 +40,9 @@ public func currentDir(currentFile: String) -> String {
     let currentDir = currentFile.deletingLastPathComponent()
     return currentDir.path
 }
+
+precedencegroup PowerPrecedence { higherThan: MultiplicationPrecedence }
+infix operator ^^ : PowerPrecedence
+public func ^^ (radix: Int, power: Int) -> Int {
+    return Int(pow(Double(radix), Double(power)))
+}
