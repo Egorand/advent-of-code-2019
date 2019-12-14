@@ -64,8 +64,7 @@ public struct Program: Hashable {
         }
       case 4:
         if let connectedOutput = output {
-          let paramAddress = memory[pointer + 1]
-          connectedOutput(memory[paramAddress])
+          connectedOutput(try! parameterValue(pointer: pointer + 1, mode: parameterModes[0]))
           pointer += 2
         } else {
           throw ProgramError.outputNotConnected
