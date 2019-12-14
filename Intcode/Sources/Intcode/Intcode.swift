@@ -1,5 +1,15 @@
 import Utils
 
+/**
+ - Opcode 1 adds together numbers read from two positions and stores the result in a third position. The three integers immediately after the opcode tell you these three positions - the first two indicate the positions from which you should read the input values, and the third indicates the position at which the output should be stored.
+ - Opcode 2 works exactly like opcode 1, except it multiplies the two inputs instead of adding them. Again, the three integers after the opcode indicate where the inputs and outputs are, not their values.
+ - Opcode 3 takes a single integer as input and saves it to the position given by its only parameter. For example, the instruction 3,50 would take an input value and store it at address 50.
+ - Opcode 4 outputs the value of its only parameter. For example, the instruction 4,50 would output the value at address 50.
+ - Opcode 5 is jump-if-true: if the first parameter is non-zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+ - Opcode 6 is jump-if-false: if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
+ - Opcode 7 is less than: if the first parameter is less than the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+ - Opcode 8 is equals: if the first parameter is equal to the second parameter, it stores 1 in the position given by the third parameter. Otherwise, it stores 0.
+ */
 public struct Program: Hashable {
   static let PARAMETER_MODE_POSITION = 0
   static let PARAMETER_MODE_IMMEDIATE = 1
@@ -37,26 +47,11 @@ public struct Program: Hashable {
   public mutating func execute() throws -> Int {
     var pointer = 0
     execLoop: while true {
-      let opcodeAndParameterModes = try! parseOpcode(encodedOpcode: memory[pointer], pointer: pointer)
-      let opcode = opcodeAndParameterModes[0]
+      let (opcode, parameterModes) = try! parseOpcode(encodedOpcode: memory[pointer], pointer: pointer)
       switch opcode {
       case 1, 2:
-        let param1: Int
-        if opcodeAndParameterModes[1] == Program.PARAMETER_MODE_POSITION {
-          param1 = memory[memory[pointer + 1]]
-        } else if opcodeAndParameterModes[1] == Program.PARAMETER_MODE_IMMEDIATE {
-          param1 = memory[pointer + 1]
-        } else {
-          throw ProgramError.unknownParameterMode(parameterMode: opcodeAndParameterModes[1], pointer: pointer + 1)
-        }
-        let param2: Int
-        if opcodeAndParameterModes[2] == Program.PARAMETER_MODE_POSITION {
-          param2 = memory[memory[pointer + 2]]
-        } else if opcodeAndParameterModes[2] == Program.PARAMETER_MODE_IMMEDIATE {
-          param2 = memory[pointer + 2]
-        } else {
-          throw ProgramError.unknownParameterMode(parameterMode: opcodeAndParameterModes[2], pointer: pointer + 2)
-        }
+        let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
         let resultAddress = memory[pointer + 3]
         if opcode == 1 {
           memory[resultAddress] = param1 + param2
@@ -81,6 +76,42 @@ public struct Program: Hashable {
         } else {
           throw ProgramError.outputNotConnected
         }
+      case 5:
+        let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        if param1 != 0 {
+          let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
+          pointer = param2
+        } else {
+          pointer += 3
+        }
+      case 6:
+        let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        if param1 == 0 {
+          let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
+          pointer = param2
+        } else {
+          pointer += 3
+        }
+      case 7:
+        let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
+        let resultAddress = memory[pointer + 3]
+        if param1 < param2 {
+          memory[resultAddress] = 1
+        } else {
+          memory[resultAddress] = 0
+        }
+        pointer += 4
+      case 8:
+        let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
+        let resultAddress = memory[pointer + 3]
+        if param1 == param2 {
+          memory[resultAddress] = 1
+        } else {
+          memory[resultAddress] = 0
+        }
+        pointer += 4
       case 99:
         break execLoop
       default:
@@ -90,22 +121,23 @@ public struct Program: Hashable {
     return memory[0]
   }
   
-  func parseOpcode(encodedOpcode: Int, pointer: Int) throws -> [Int] {
-    var opcodeAndParameterModes = [Int]()
+  func parseOpcode(encodedOpcode: Int, pointer: Int) throws -> (opcode: Int, parameterModes: [Int]) {
+    var parameterModes = [Int]()
     let opcode = encodedOpcode % 100
-    opcodeAndParameterModes.append(opcode)
     switch opcode {
-    case 1, 2:
-      opcodeAndParameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 3))
+    case 1, 2, 7, 8:
+      parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 3))
     case 3, 4:
-      opcodeAndParameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 1))
+      parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 1))
+    case 5, 6:
+      parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 2))
     case 99:
       // Has no parameters
       break
     default:
       throw ProgramError.unknownOpcode(opcode: opcode, pointer: pointer)
     }
-    return opcodeAndParameterModes
+    return (opcode, parameterModes)
   }
   
   func parseParameterModes(encodedOpcode: Int, numOfParameters: Int) -> [Int] {
@@ -115,6 +147,16 @@ public struct Program: Hashable {
       parameterModes.append(nextParameterMode)
     }
     return parameterModes
+  }
+  
+  func parameterValue(pointer: Int, mode: Int) throws -> Int {
+    if mode == Program.PARAMETER_MODE_POSITION {
+      return memory[memory[pointer]]
+    } else if mode == Program.PARAMETER_MODE_IMMEDIATE {
+      return memory[pointer]
+    } else {
+      throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
+    }
   }
   
   public static func == (lhs: Program, rhs: Program) -> Bool {
