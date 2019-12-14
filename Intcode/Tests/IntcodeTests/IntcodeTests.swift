@@ -4,23 +4,27 @@ import XCTest
 final class IntcodeTests: XCTestCase {
   func testAddition() {
     var program = Program(memory: [1,0,0,0,99,2,3])
-    XCTAssertEqual(try! program.execute(noun: 5, verb: 6), 5)
+    try! program.execute(noun: 5, verb: 6)
+    XCTAssertEqual(program.getValueAt(position: 0), 5)
   }
   
   func testMultiplication() {
     var program = Program(memory: [2,0,0,0,99,2,3])
-    XCTAssertEqual(try! program.execute(noun: 5, verb: 6), 6)
+    try! program.execute(noun: 5, verb: 6)
+    XCTAssertEqual(program.getValueAt(position: 0), 6)
   }
   
   func testHalt() {
     var program = Program(memory: [99,2,0,0,0,99,2,3])
-    XCTAssertEqual(try! program.execute(noun: 6, verb: 7), 99)
+    try! program.execute(noun: 6, verb: 7)
+    XCTAssertEqual(program.getValueAt(position: 0), 99)
   }
   
   func testInput() {
     var program = Program(memory: [3,0,99])
     program.connectInput(input: { 1 })
-    XCTAssertEqual(try! program.execute(), 1)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 1)
   }
   
   func testOutput() {
@@ -31,17 +35,20 @@ final class IntcodeTests: XCTestCase {
   
   func testPositionMode() {
     var program = Program(memory: [1002,5,3,0,99,33])
-    XCTAssertEqual(try! program.execute(), 99)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 99)
   }
   
   func testImmediateMode() {
     var program = Program(memory: [1101,100,-3,0,99])
-    XCTAssertEqual(try! program.execute(), 97)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 97)
   }
   
   func testJumpIfTrue() {
     var program = Program(memory: [1105,1,3,1101,1,1,0,99])
-    XCTAssertEqual(try! program.execute(), 2)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 2)
     
     // Immediate mode
     let memory = [3,3,1105,-1,9,1101,0,0,12,4,12,99,1]
@@ -51,7 +58,8 @@ final class IntcodeTests: XCTestCase {
   
   func testJumpIfFalse() {
     var program = Program(memory: [1106,0,3,1101,1,1,0,99])
-    XCTAssertEqual(try! program.execute(), 2)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 2)
     
     // Position mode
     let memory = [3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9]
@@ -61,7 +69,8 @@ final class IntcodeTests: XCTestCase {
   
   func testLessThan() {
     var program = Program(memory: [1107,1,2,0,99])
-    XCTAssertEqual(try! program.execute(), 1)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 1)
     
     // Position mode
     var memory = [3,9,7,9,10,9,4,9,99,-1,8]
@@ -75,7 +84,8 @@ final class IntcodeTests: XCTestCase {
   
   func testEquals() {
     var program = Program(memory: [1108,2,2,0,99])
-    XCTAssertEqual(try! program.execute(), 1)
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 1)
     
     // Position mode
     var memory = [3,9,8,9,10,9,4,9,99,-1,8]

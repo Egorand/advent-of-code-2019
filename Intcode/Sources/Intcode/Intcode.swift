@@ -15,6 +15,10 @@ public struct Program: Hashable {
   init(memory: [Int]) {
     self.memory = memory
   }
+    
+  public func getValueAt(position: Int) -> Int {
+    return memory[position]
+  }
   
   public mutating func connectInput(input: @escaping () -> Int) {
     self.input = input
@@ -24,17 +28,17 @@ public struct Program: Hashable {
     self.output = output
   }
   
-  public mutating func execute(noun: Int, verb: Int) throws -> Int {
+  public mutating func execute(noun: Int, verb: Int) throws {
     memory[1] = noun
     memory[2] = verb
     do {
-      return try execute()
+      try execute()
     } catch {
       throw error
     }
   }
 
-  public mutating func execute() throws -> Int {
+  public mutating func execute() throws {
     var pointer = 0
     execLoop: while true {
       let (opcode, parameterModes) = try! parseOpcode(encodedOpcode: memory[pointer], pointer: pointer)
@@ -108,7 +112,6 @@ public struct Program: Hashable {
         throw ProgramError.unknownOpcode(opcode: opcode, pointer: pointer)
       }
     }
-    return memory[0]
   }
   
   func parseOpcode(encodedOpcode: Int, pointer: Int) throws -> (opcode: Int, parameterModes: [Int]) {
@@ -140,12 +143,13 @@ public struct Program: Hashable {
   }
   
   func parameterValue(pointer: Int, mode: Int) throws -> Int {
-    if mode == Program.PARAMETER_MODE_POSITION {
-      return memory[memory[pointer]]
-    } else if mode == Program.PARAMETER_MODE_IMMEDIATE {
-      return memory[pointer]
-    } else {
-      throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
+    switch mode {
+    case Program.PARAMETER_MODE_POSITION:
+        return memory[memory[pointer]]
+    case Program.PARAMETER_MODE_IMMEDIATE:
+        return memory[pointer]
+    default:
+        throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
     }
   }
   
