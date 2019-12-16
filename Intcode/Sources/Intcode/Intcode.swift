@@ -5,7 +5,7 @@ public struct Program: Hashable {
   static let PARAMETER_MODE_IMMEDIATE = 1
   
   var memory: [Int]
-  var input: (() -> Int)?
+  var inputs = [(() -> Int)?]()
   var output: ((Int) -> Void)?
     
   public func hash(into hasher: inout Hasher) {
@@ -21,7 +21,7 @@ public struct Program: Hashable {
   }
   
   public mutating func connectInput(input: @escaping () -> Int) {
-    self.input = input
+    inputs.append(input)
   }
   
   public mutating func connectOutput(output: @escaping (Int) -> Void) {
@@ -54,7 +54,7 @@ public struct Program: Hashable {
         }
         pointer += 4
       case 3:
-        if let connectedInput = input {
+        if let connectedInput = inputs.removeFirst() {
           let inputValue = connectedInput()
           let resultAddress = memory[pointer + 1]
           memory[resultAddress] = inputValue

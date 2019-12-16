@@ -27,6 +27,14 @@ final class IntcodeTests: XCTestCase {
     XCTAssertEqual(program.getValueAt(position: 0), 1)
   }
   
+  func testMultipleInputs() {
+    var program = Program(memory: [3,3,3,-1,99])
+    program.connectInput(input: { 0 })
+    program.connectInput(input: { 1 })
+    try! program.execute()
+    XCTAssertEqual(program.getValueAt(position: 0), 1)
+  }
+  
   func testOutput() {
     var program = Program(memory: [4,0,99])
     program.connectOutput(output: { XCTAssertEqual($0, 4) })
@@ -124,6 +132,7 @@ final class IntcodeTests: XCTestCase {
       ("multiplication", testMultiplication),
       ("halt", testHalt),
       ("input", testInput),
+      ("multipleInputs", testMultipleInputs),
       ("output", testOutput),
       ("positionMode", testPositionMode),
       ("immediateMode", testImmediateMode),
