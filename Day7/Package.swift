@@ -16,8 +16,5 @@ let package = Package(
         .target(
             name: "Day7",
             dependencies: ["Intcode", "Utils"]),
-        .testTarget(
-            name: "Day7Tests",
-            dependencies: ["Day7"]),
     ]
 )
