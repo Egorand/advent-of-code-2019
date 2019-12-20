@@ -116,6 +116,13 @@ final class IntcodeTests: XCTestCase {
     executeProgram(memory: memory, input: 71, expectedOutput: 1001)
   }
   
+  func testResumeProgram() {
+    var program = Program(memory: [3,1,4,1,99])
+    program.connectOutput(output: assertOutput(isEqualTo: 5))
+    try! program.execute() // Will suspend since input is not connected.
+    program.connectInput(input: { 5 })
+  }
+  
   func executeProgram(memory: [Int], input: Int, expectedOutput: Int) {
     var program = Program(memory: memory)
     program.connectInput(input: { input })
@@ -141,5 +148,6 @@ final class IntcodeTests: XCTestCase {
       ("lessThan", testLessThan),
       ("equals", testEquals),
       ("jumpsAndComparisons", testJumpsAndComparisons),
+      ("resumeProgram", testResumeProgram),
   ]
 }

@@ -5,6 +5,8 @@ public struct Program: Hashable {
   static let PARAMETER_MODE_IMMEDIATE = 1
   
   var memory: [Int]
+  var pointer: Int = 0
+  var isSuspended: Bool = false
   var inputs = [(() -> Int)?]()
   var output: ((Int) -> Void)?
     
@@ -22,6 +24,10 @@ public struct Program: Hashable {
   
   public mutating func connectInput(input: @escaping () -> Int) {
     inputs.append(input)
+    // Resume suspended execution.
+    if isSuspended {
+      try! execute()
+    }
   }
   
   public mutating func connectOutput(output: @escaping (Int) -> Void) {
@@ -39,7 +45,7 @@ public struct Program: Hashable {
   }
 
   public mutating func execute() throws {
-    var pointer = 0
+    isSuspended = false
     execLoop: while true {
       let (opcode, parameterModes) = try! parseOpcode(encodedOpcode: memory[pointer], pointer: pointer)
       switch opcode {
@@ -54,13 +60,16 @@ public struct Program: Hashable {
         }
         pointer += 4
       case 3:
+        if inputs.isEmpty {
+          // Suspend until an input is connected.
+          isSuspended = true
+          break execLoop
+        }
         if let connectedInput = inputs.removeFirst() {
           let inputValue = connectedInput()
           let resultAddress = memory[pointer + 1]
           memory[resultAddress] = inputValue
           pointer += 2
-        } else {
-          throw ProgramError.inputNotConnected
         }
       case 4:
         if let connectedOutput = output {
@@ -106,6 +115,7 @@ public struct Program: Hashable {
         }
         pointer += 4
       case 99:
+        pointer = -1
         break execLoop
       default:
         throw ProgramError.unknownOpcode(opcode: opcode, pointer: pointer)
