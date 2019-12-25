@@ -3,10 +3,13 @@ import Utils
 public struct Program: Hashable {
   static let PARAMETER_MODE_POSITION = 0
   static let PARAMETER_MODE_IMMEDIATE = 1
+  static let PARAMETER_MODE_RELATIVE = 2
   
   var memory: [Int]
   var pointer: Int = 0
   var isSuspended: Bool = false
+  var relativeBase: Int = 0
+  
   var inputs = [(() -> Int)?]()
   var output: ((Int) -> Void)?
     
@@ -114,6 +117,10 @@ public struct Program: Hashable {
           memory[resultAddress] = 0
         }
         pointer += 4
+      case 9:
+        let param = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
+        relativeBase += param
+        pointer += 2
       case 99:
         pointer = -1
         break execLoop
@@ -129,7 +136,7 @@ public struct Program: Hashable {
     switch opcode {
     case 1, 2, 7, 8:
       parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 3))
-    case 3, 4:
+    case 3, 4, 9:
       parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 1))
     case 5, 6:
       parameterModes.append(contentsOf: parseParameterModes(encodedOpcode: encodedOpcode, numOfParameters: 2))
@@ -155,7 +162,7 @@ public struct Program: Hashable {
     switch mode {
     case Program.PARAMETER_MODE_POSITION:
         return memory[memory[pointer]]
-    case Program.PARAMETER_MODE_IMMEDIATE:
+    case Program.PARAMETER_MODE_IMMEDIATE, Program.PARAMETER_MODE_RELATIVE:
         return memory[pointer]
     default:
         throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)

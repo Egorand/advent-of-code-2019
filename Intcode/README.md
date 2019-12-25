@@ -3,6 +3,22 @@ Intcode
 
 An Intcode program is a list of integers separated by commas (like `1,0,0,3,99`). To run one, start by looking at the first integer (called position `0`). Here, you will find an **opcode**. The opcode indicates what to do; for example, `99` means that the program is finished and should immediately halt. Encountering an unknown opcode means something went wrong.
 
+Your existing Intcode computer is missing one key feature: it needs support for parameters in **relative mode**.
+
+Parameters in mode `2`, **relative mode**, behave very similarly to parameters in **position mode**: the parameter is interpreted as a position. Like position mode, parameters in relative mode can be read from or written to.
+
+The important difference is that relative mode parameters don't count from address `0`. Instead, they count from a value called the **relative base**. The **relative base** starts at `0`.
+
+The address a relative mode parameter refers to is itself **plus** the current **relative base**. When the relative base is `0`, relative mode parameters and position mode parameters with the same value refer to the same address.
+
+For example, given a relative base of `50`, a relative mode parameter of `-7` refers to memory address `50 + -7 = 43`.
+
+The relative base is modified with the **relative base offset** instruction:
+
+- Opcode `9` **adjusts the relative base** by the value of its only parameter. The relative base increases (or decreases, if the value is negative) by the value of the parameter.
+
+For example, if the relative base is `2000`, then after the instruction `109,19`, the relative base would be `2019`. If the next instruction were `204,-34`, then the value at address `1985` would be output.
+
 ### Opcodes
 
 - Opcode `1` adds together numbers read from two positions and stores the result in a third position. The three integers immediately after the opcode tell you these three positions - the first two indicate the positions from which you should read the input values, and the third indicates the position at which the output should be stored. For example, if your Intcode computer encounters `1,10,20,30`, it should read the values at positions `10` and `20`, add those values, and then overwrite the value at position 30 with their sum.
@@ -13,14 +29,16 @@ An Intcode program is a list of integers separated by commas (like `1,0,0,3,99`)
 - Opcode `6` is **jump-if-false**: if the first parameter is zero, it sets the instruction pointer to the value from the second parameter. Otherwise, it does nothing.
 - Opcode `7` is **less than**: if the first parameter is less than the second parameter, it stores `1` in the position given by the third parameter. Otherwise, it stores `0`.
 - Opcode `8` is **equals**: if the first parameter is equal to the second parameter, it stores `1` in the position given by the third parameter. Otherwise, it stores `0`.
+- Opcode `9` **adjusts the relative base** by the value of its only parameter. The relative base increases (or decreases, if the value is negative) by the value of the parameter.
 - Opcode `99` halts the execution. It has no parameters.
 
 ### Parameter modes
 
 Each parameter of an instruction is handled based on its parameter mode. There are two parameter modes:
 
-- **Position mode**, which causes the parameter to be interpreted as a position - if the parameter is `50`, its value is the value stored at address `50` in memory. 
-- **Immediate mode**. In immediate mode, a parameter is interpreted as a value - if the parameter is `50`, its value is simply `50`.
+- **Position mode** (`0`), which causes the parameter to be interpreted as a position - if the parameter is `50`, its value is the value stored at address `50` in memory. 
+- **Immediate mode** (`1`). In immediate mode, a parameter is interpreted as a value - if the parameter is `50`, its value is simply `50`.
+- **Relative mode** (`2`), behave very similarly to parameters in **position mode**: the parameter is interpreted as a position. Like position mode, parameters in relative mode can be read from or written to. The important difference is that relative mode parameters don't count from address `0`. Instead, they count from a value called the **relative base**. The **relative base** starts at `0`. The address a relative mode parameter refers to is itself **plus** the current **relative base**. When the relative base is `0`, relative mode parameters and position mode parameters with the same value refer to the same address.
 
 Parameter modes are stored in the same value as the instruction's opcode. The opcode is a two-digit number based only on the ones and tens digit of the value, that is, the opcode is the rightmost two digits of the first value in an instruction. Parameter modes are single digits, one per parameter, read right-to-left from the opcode: the first parameter's mode is in the hundreds digit, the second parameter's mode is in the thousands digit, the third parameter's mode is in the ten-thousands digit, and so on. Any missing modes are `0`.
 

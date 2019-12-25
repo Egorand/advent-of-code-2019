@@ -123,6 +123,11 @@ final class IntcodeTests: XCTestCase {
     program.connectInput(input: { 5 })
   }
   
+  func testRelativeBase() {
+    let memory = [9,3,204,55,99]
+    executeProgram(memory: memory, input: 0, expectedOutput: 55)
+  }
+  
   func executeProgram(memory: [Int], input: Int, expectedOutput: Int) {
     var program = Program(memory: memory)
     program.connectInput(input: { input })
@@ -149,5 +154,6 @@ final class IntcodeTests: XCTestCase {
       ("equals", testEquals),
       ("jumpsAndComparisons", testJumpsAndComparisons),
       ("resumeProgram", testResumeProgram),
+      ("relativeBase", testRelativeBase),
   ]
 }
