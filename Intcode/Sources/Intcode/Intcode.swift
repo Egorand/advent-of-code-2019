@@ -5,27 +5,27 @@ public struct Program: Hashable {
   static let PARAMETER_MODE_IMMEDIATE = 1
   static let PARAMETER_MODE_RELATIVE = 2
   
-  var memory: [Int]
-  var pointer: Int = 0
+  var memory: [Int64:Int64]
+  var pointer: Int64 = 0
   var isSuspended: Bool = false
-  var relativeBase: Int = 0
+  var relativeBase: Int64 = 0
   
-  var inputs = [(() -> Int)?]()
-  var output: ((Int) -> Void)?
+  var inputs = [(() -> Int64)?]()
+  var output: ((Int64) -> Void)?
     
   public func hash(into hasher: inout Hasher) {
     hasher.combine(memory)
   }
   
-  init(memory: [Int]) {
-    self.memory = memory
+  init(memory: [Int64]) {
+    self.memory = Dictionary(uniqueKeysWithValues: zip(memory.indices.map { Int64($0) }, memory))
   }
     
-  public func getValueAt(position: Int) -> Int {
-    return memory[position]
+  public func getValueAt(position: Int64) -> Int64 {
+    return memory[position, default: 0]
   }
   
-  public mutating func connectInput(input: @escaping () -> Int) {
+  public mutating func connectInput(input: @escaping () -> Int64) {
     inputs.append(input)
     // Resume suspended execution.
     if isSuspended {
@@ -33,13 +33,13 @@ public struct Program: Hashable {
     }
   }
   
-  public mutating func connectOutput(output: @escaping (Int) -> Void) {
+  public mutating func connectOutput(output: @escaping (Int64) -> Void) {
     self.output = output
   }
   
   public mutating func execute(noun: Int, verb: Int) throws {
-    memory[1] = noun
-    memory[2] = verb
+    memory[1] = Int64(noun)
+    memory[2] = Int64(verb)
     do {
       try execute()
     } catch {
@@ -50,12 +50,12 @@ public struct Program: Hashable {
   public mutating func execute() throws {
     isSuspended = false
     execLoop: while true {
-      let (opcode, parameterModes) = try! parseOpcode(encodedOpcode: memory[pointer], pointer: pointer)
+      let (opcode, parameterModes) = try! parseOpcode(encodedOpcode: Int(memory[pointer]!), pointer: pointer)
       switch opcode {
       case 1, 2:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]
+        let resultAddress = memory[pointer + 3]!
         if opcode == 1 {
           memory[resultAddress] = param1 + param2
         } else if opcode == 2 {
@@ -70,7 +70,7 @@ public struct Program: Hashable {
         }
         if let connectedInput = inputs.removeFirst() {
           let inputValue = connectedInput()
-          let resultAddress = memory[pointer + 1]
+          let resultAddress = memory[pointer + 1]!
           memory[resultAddress] = inputValue
           pointer += 2
         }
@@ -100,7 +100,7 @@ public struct Program: Hashable {
       case 7:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]
+        let resultAddress = memory[pointer + 3]!
         if param1 < param2 {
           memory[resultAddress] = 1
         } else {
@@ -110,7 +110,7 @@ public struct Program: Hashable {
       case 8:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]
+        let resultAddress = memory[pointer + 3]!
         if param1 == param2 {
           memory[resultAddress] = 1
         } else {
@@ -130,7 +130,7 @@ public struct Program: Hashable {
     }
   }
   
-  func parseOpcode(encodedOpcode: Int, pointer: Int) throws -> (opcode: Int, parameterModes: [Int]) {
+  func parseOpcode(encodedOpcode: Int, pointer: Int64) throws -> (opcode: Int, parameterModes: [Int]) {
     var parameterModes = [Int]()
     let opcode = encodedOpcode % 100
     switch opcode {
@@ -158,14 +158,14 @@ public struct Program: Hashable {
     return parameterModes
   }
   
-  func parameterValue(pointer: Int, mode: Int) throws -> Int {
+  func parameterValue(pointer: Int64, mode: Int) throws -> Int64 {
     switch mode {
     case Program.PARAMETER_MODE_POSITION:
-        return memory[memory[pointer]]
+      return memory[memory[pointer, default: 0], default: 0]
     case Program.PARAMETER_MODE_IMMEDIATE, Program.PARAMETER_MODE_RELATIVE:
-        return memory[pointer]
+      return memory[pointer, default: 0]
     default:
-        throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
+      throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
     }
   }
   
@@ -174,13 +174,13 @@ public struct Program: Hashable {
   }
     
   public static func fromFile(path: String) -> Program {
-    return Program(memory: readCSVAsInt64(path: path).map { Int($0) })
+    return Program(memory: readCSVAsInt64(path: path))
   }
 }
 
 enum ProgramError: Error {
-  case unknownOpcode(opcode: Int, pointer: Int)
-  case unknownParameterMode(parameterMode: Int, pointer: Int)
+  case unknownOpcode(opcode: Int, pointer: Int64)
+  case unknownParameterMode(parameterMode: Int, pointer: Int64)
   case inputNotConnected
   case outputNotConnected
 }

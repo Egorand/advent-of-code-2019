@@ -128,15 +128,30 @@ final class IntcodeTests: XCTestCase {
     executeProgram(memory: memory, input: 0, expectedOutput: 55)
   }
   
+  func testQuine() {
+    let memory = [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99]
+    executeProgram(memory: memory, input: 0, expectedOutput: -1)
+  }
+  
+  func testLargeOutput() {
+    let memory = [1102,34915192,34915192,7,4,7,99,0]
+    executeProgram(memory: memory, input: 0, expectedOutput: 1219070632396864)
+  }
+  
+  func testLargeOutput2() {
+    let memory = [104,1125899906842624,99]
+    executeProgram(memory: memory, input: 0, expectedOutput: 1125899906842624)
+  }
+  
   func executeProgram(memory: [Int], input: Int, expectedOutput: Int) {
-    var program = Program(memory: memory)
-    program.connectInput(input: { input })
+    var program = Program(memory: memory.map { Int64($0) })
+    program.connectInput(input: { Int64(input) })
     program.connectOutput(output: assertOutput(isEqualTo: expectedOutput))
     try! program.execute()
   }
   
-  func assertOutput(isEqualTo: Int) -> (Int) -> Void {
-    return { XCTAssertEqual($0, isEqualTo) }
+  func assertOutput(isEqualTo: Int) -> (Int64) -> Void {
+    return { XCTAssertEqual($0, Int64(isEqualTo)) }
   }
 
   static var allTests = [
@@ -155,5 +170,8 @@ final class IntcodeTests: XCTestCase {
       ("jumpsAndComparisons", testJumpsAndComparisons),
       ("resumeProgram", testResumeProgram),
       ("relativeBase", testRelativeBase),
+      ("quine", testQuine),
+      ("largeOutput", testLargeOutput),
+      ("largeOutput2", testLargeOutput2),
   ]
 }
