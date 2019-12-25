@@ -3,22 +3,6 @@ Intcode
 
 An Intcode program is a list of integers separated by commas (like `1,0,0,3,99`). To run one, start by looking at the first integer (called position `0`). Here, you will find an **opcode**. The opcode indicates what to do; for example, `99` means that the program is finished and should immediately halt. Encountering an unknown opcode means something went wrong.
 
-Your existing Intcode computer is missing one key feature: it needs support for parameters in **relative mode**.
-
-Parameters in mode `2`, **relative mode**, behave very similarly to parameters in **position mode**: the parameter is interpreted as a position. Like position mode, parameters in relative mode can be read from or written to.
-
-The important difference is that relative mode parameters don't count from address `0`. Instead, they count from a value called the **relative base**. The **relative base** starts at `0`.
-
-The address a relative mode parameter refers to is itself **plus** the current **relative base**. When the relative base is `0`, relative mode parameters and position mode parameters with the same value refer to the same address.
-
-For example, given a relative base of `50`, a relative mode parameter of `-7` refers to memory address `50 + -7 = 43`.
-
-The relative base is modified with the **relative base offset** instruction:
-
-- Opcode `9` **adjusts the relative base** by the value of its only parameter. The relative base increases (or decreases, if the value is negative) by the value of the parameter.
-
-For example, if the relative base is `2000`, then after the instruction `109,19`, the relative base would be `2019`. If the next instruction were `204,-34`, then the value at address `1985` would be output.
-
 ### Opcodes
 
 - Opcode `1` adds together numbers read from two positions and stores the result in a third position. The three integers immediately after the opcode tell you these three positions - the first two indicate the positions from which you should read the input values, and the third indicates the position at which the output should be stored. For example, if your Intcode computer encounters `1,10,20,30`, it should read the values at positions `10` and `20`, add those values, and then overwrite the value at position 30 with their sum.

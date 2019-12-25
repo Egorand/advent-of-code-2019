@@ -128,11 +128,6 @@ final class IntcodeTests: XCTestCase {
     executeProgram(memory: memory, input: 0, expectedOutput: 55)
   }
   
-  func testQuine() {
-    let memory = [109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99]
-    executeProgram(memory: memory, input: 0, expectedOutput: -1)
-  }
-  
   func testLargeOutput() {
     let memory = [1102,34915192,34915192,7,4,7,99,0]
     executeProgram(memory: memory, input: 0, expectedOutput: 1219070632396864)
@@ -170,7 +165,6 @@ final class IntcodeTests: XCTestCase {
       ("jumpsAndComparisons", testJumpsAndComparisons),
       ("resumeProgram", testResumeProgram),
       ("relativeBase", testRelativeBase),
-      ("quine", testQuine),
       ("largeOutput", testLargeOutput),
       ("largeOutput2", testLargeOutput2),
   ]

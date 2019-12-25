@@ -55,11 +55,11 @@ public struct Program: Hashable {
       case 1, 2:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]!
+        let result = try! resultAddress(pointer: pointer + 3, mode: parameterModes[2])
         if opcode == 1 {
-          memory[resultAddress] = param1 + param2
+          memory[result] = param1 + param2
         } else if opcode == 2 {
-          memory[resultAddress] = param1 * param2
+          memory[result] = param1 * param2
         }
         pointer += 4
       case 3:
@@ -70,8 +70,8 @@ public struct Program: Hashable {
         }
         if let connectedInput = inputs.removeFirst() {
           let inputValue = connectedInput()
-          let resultAddress = memory[pointer + 1]!
-          memory[resultAddress] = inputValue
+          let result = try! resultAddress(pointer: pointer + 1, mode: parameterModes[0])
+          memory[result] = inputValue
           pointer += 2
         }
       case 4:
@@ -100,21 +100,21 @@ public struct Program: Hashable {
       case 7:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]!
+        let result = try! resultAddress(pointer: pointer + 3, mode: parameterModes[2])
         if param1 < param2 {
-          memory[resultAddress] = 1
+          memory[result] = 1
         } else {
-          memory[resultAddress] = 0
+          memory[result] = 0
         }
         pointer += 4
       case 8:
         let param1 = try! parameterValue(pointer: pointer + 1, mode: parameterModes[0])
         let param2 = try! parameterValue(pointer: pointer + 2, mode: parameterModes[1])
-        let resultAddress = memory[pointer + 3]!
+        let result = try! resultAddress(pointer: pointer + 3, mode: parameterModes[2])
         if param1 == param2 {
-          memory[resultAddress] = 1
+          memory[result] = 1
         } else {
-          memory[resultAddress] = 0
+          memory[result] = 0
         }
         pointer += 4
       case 9:
@@ -162,10 +162,23 @@ public struct Program: Hashable {
     switch mode {
     case Program.PARAMETER_MODE_POSITION:
       return memory[memory[pointer, default: 0], default: 0]
-    case Program.PARAMETER_MODE_IMMEDIATE, Program.PARAMETER_MODE_RELATIVE:
+    case Program.PARAMETER_MODE_IMMEDIATE:
       return memory[pointer, default: 0]
+    case Program.PARAMETER_MODE_RELATIVE:
+      return relativeBase
     default:
       throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
+    }
+  }
+  
+  func resultAddress(pointer: Int64, mode: Int) throws -> Int64 {
+    switch mode {
+    case Program.PARAMETER_MODE_POSITION:
+      return memory[pointer, default: 0]
+    case Program.PARAMETER_MODE_RELATIVE:
+      return relativeBase
+    default:
+      throw ProgramError.unexpectedAddressMode(addressMode: mode, pointer: pointer)
     }
   }
   
@@ -181,6 +194,7 @@ public struct Program: Hashable {
 enum ProgramError: Error {
   case unknownOpcode(opcode: Int, pointer: Int64)
   case unknownParameterMode(parameterMode: Int, pointer: Int64)
+  case unexpectedAddressMode(addressMode: Int, pointer: Int64)
   case inputNotConnected
   case outputNotConnected
 }
