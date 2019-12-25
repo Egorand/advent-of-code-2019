@@ -48,25 +48,29 @@ func executeCircuit(execution: Execution, circuit: [Int]) -> Int {
     }
     return lastOutput
   case .feedbackLoop:
-    var programCopies = [Program]()
-    let firstInput = [0]
-    var lastInput = firstInput
+    var amplifiers = (1...5).map({ _ in programCopy })
     for (index, setting) in circuit.enumerated() {
-      programCopy.connectInput(input: { setting })
-      programCopy.connectInput(input: { lastInput.removeFirst() })
-      if index < circuit.count - 1 {
-        lastInput = [Int]()
-      } else {
-        lastInput = firstInput
+      amplifiers[index].connectInput(input: {
+        print("Amplifier #\(index) consumes setting \(setting)")
+        return setting
+      })
+      amplifiers[index].connectOutput(output: { signal in
+        print("Amplifier #\(index) produces signal \(signal)")
+        amplifiers[(index + 1) % amplifiers.count].connectInput(input: {
+          print("Amplifier #\(index) consumes signal \(setting)")
+          return signal
+        })
+      })
+      if index > 0 {
+        print("Executing amplifier #\(index)")
+        try! amplifiers[index].execute()
       }
-      programCopy.connectOutput(output: { lastInput.append($0) })
-      programCopies.append(programCopy)
-      programCopy = execution.program
     }
-    for program in programCopies {
-      var nextProgram = program
-      try! nextProgram.execute()
-    }
+    amplifiers[0].connectInput(input: {
+      print("Amplifier #0 consumes 0")
+      return 0
+    })
+    try! amplifiers[0].execute()
     return -1
   }
 }
@@ -100,5 +104,7 @@ print(highestSignal(execution: Execution(program: Program.fromFile(path: "\(curr
 print(highestSignal(execution: Execution(program: Program.fromFile(path: "\(currentDir(currentFile: #file))/input-amplification-circuit.txt"), mode: .oneShot)))
 
 // Part 2: Tests
-print(highestSignal(execution: Execution(program: Program.fromFile(path: "\(currentDir(currentFile: #file))/input-test1-part2.txt"), mode: .feedbackLoop)))
+//print(highestSignal(execution: Execution(program: Program.fromFile(path: "\(currentDir(currentFile: #file))/input-test1-part2.txt"), mode: .feedbackLoop)))
 //print(highestSignal(execution: Execution(program: Program.fromFile(path: "\(currentDir(currentFile: #file))/input-test2-part2.txt"), mode: .feedbackLoop)))
+
+print(executeCircuit(execution: Execution(program: Program.fromFile(path: "\(currentDir(currentFile: #file))/input-test1-part2.txt"), mode: .feedbackLoop), circuit: [9,8,7,6,5]))
