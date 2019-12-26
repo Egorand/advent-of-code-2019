@@ -124,7 +124,7 @@ final class IntcodeTests: XCTestCase {
   }
   
   func testRelativeBase() {
-    let memory = [9,3,204,55,99]
+    let memory = [109,3,204,2,99,55]
     executeProgram(memory: memory, input: 0, expectedOutput: 55)
   }
   

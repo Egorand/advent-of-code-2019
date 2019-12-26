@@ -165,7 +165,7 @@ public struct Program: Hashable {
     case Program.PARAMETER_MODE_IMMEDIATE:
       return memory[pointer, default: 0]
     case Program.PARAMETER_MODE_RELATIVE:
-      return relativeBase
+      return memory[memory[pointer, default: 0] + relativeBase, default: 0]
     default:
       throw ProgramError.unknownParameterMode(parameterMode: mode, pointer: pointer)
     }
@@ -176,7 +176,7 @@ public struct Program: Hashable {
     case Program.PARAMETER_MODE_POSITION:
       return memory[pointer, default: 0]
     case Program.PARAMETER_MODE_RELATIVE:
-      return relativeBase
+      return memory[pointer, default: 0] + relativeBase
     default:
       throw ProgramError.unexpectedAddressMode(addressMode: mode, pointer: pointer)
     }
